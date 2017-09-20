@@ -1,0 +1,14 @@
+MP3 tags Reader and more
+
+console.py <file_name>
+
+positional arguments:
+  name        file name
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --gui       Graphic UI
+  --pic PIC   filename to store picture
+  --txt TXT   filename to store txt
+  --hex       hexdump of binary tags
+  --player    Play sound
