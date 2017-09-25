@@ -45,7 +45,7 @@ class Header:
     """ Represent the ID3 header in a tag.
     """
 
-    def __init__(self):
+    def __init__(self, reader):
         self.major_version = 0
         self.revision = 0
         self.flags = 0
@@ -54,6 +54,7 @@ class Header:
         self.Compressed = False
         self.Experimental = False
         self.Footer = False
+        self.reader = reader
 
     def __str__(self):
         return str(self.__dict__)
@@ -65,7 +66,9 @@ class Header:
         self.flags = raw_header[3]
         self.size = Reader.get_synchsafe_int(raw_header[4:8])
 
-        self.read_ext_header = self.pass_pass()
+        self.reader.remaining_byte = self.size
+
+        self.read_ext_header = None
 
         self.process_flag()
         if self.read_ext_header:
@@ -81,15 +84,15 @@ class Header:
         if self.major_version >= 3:
             if self.flags & 64:
                 if self.major_version == 3:
-                    self.read_ext_header = self.read_ext_header_ver3
+                    self.read_ext_header = self.reader.read_ext_header_ver3
                 if self.major_version == 4:
-                    self.read_ext_header = self.read_ext_header_ver4
+                    self.read_ext_header = self.reader.read_ext_header_ver4
             self.Experimental = self.flags & 32 != 0
         if self.major_version == 4:
             self.Footer = self.flags & 16 != 0
 
     def __iter__(self):
-        yield "ID3 tag version: {}.{}"\
+        yield "ID3 tag version: 2.{}.{}"\
             .format(self.major_version, self.revision)
         yield "ID3 tag size: {} byte".format(self.size)
         yield "Comressed: {}".format("Yes" if self.Compressed else "No")
@@ -274,10 +277,10 @@ class Reader:
         raw_header = self.file.read(10)
         if len(raw_header) < 10:
             return
-        self.header = Header()
+        self.header = Header(self)
         self.header.read(raw_header)
 
-        self.remaining_byte = self.header.size
+        #self.remaining_byte = self.header.size
 
         read_frame_versions = {2: self.read_frame_rev2,
                                3: self.read_frame_rev3,
@@ -306,7 +309,7 @@ class Reader:
         data = self.read_bytes(size)
 
     def read_ext_header_ver4(self):
-        size = Reader.get_int(self.read_bytes(4))
+        size = Reader.get_synchsafe_int(self.read_bytes(4))
         data = self.read_bytes(size - 4)
 
     validIdChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
