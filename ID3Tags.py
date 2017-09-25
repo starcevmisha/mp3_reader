@@ -45,7 +45,7 @@ class Header:
     """ Represent the ID3 header in a tag.
     """
 
-    def __init__(self, reader):
+    def __init__(self):
         self.major_version = 0
         self.revision = 0
         self.flags = 0
@@ -54,19 +54,24 @@ class Header:
         self.Compressed = False
         self.Experimental = False
         self.Footer = False
-        self.reader = reader
 
     def __str__(self):
         return str(self.__dict__)
 
-    def read(self, raw_header):
+    def read(self, reader):
+        raw_header = reader.file.read(10)
+        if len(raw_header) < 10:
+            print('Bad file')
+            exit()
+
+
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
         self.major_version = raw_header[1]
         self.revision = raw_header[2]
         self.flags = raw_header[3]
         self.size = Reader.get_synchsafe_int(raw_header[4:8])
 
-        self.reader.remaining_byte = self.size
+        reader.remaining_byte = self.size
 
         self.read_ext_header = None
 
@@ -274,11 +279,9 @@ class Reader:
         self.file.close()
 
     def read_tags(self):
-        raw_header = self.file.read(10)
-        if len(raw_header) < 10:
-            return
-        self.header = Header(self)
-        self.header.read(raw_header)
+
+        self.header = Header()
+        self.header.read(self)
 
         #self.remaining_byte = self.header.size
 
