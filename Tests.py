@@ -1,24 +1,39 @@
 import ID3Tags
 import unittest
+from unittest import mock
+from mock import mock_open
+
+class HeaderTest:
+    def __init__(self):
+        self.size = -10
+class Reader_test:
+    def __init__(self):
+        self.file = open('111123.txt', 'rb')
+        self.remaining_byte = 0
+        self.header = HeaderTest()
 
 
 class TestCat(unittest.TestCase):
 
     def test__header_read(self):
-        mp3header = ID3Tags.Header()
-        mp3header.read(b'ID3\x03\x00\x00\x00\n$R')
-        self.assertDictEqual(
-            mp3header.__dict__,
-            {
-                'major_version': 3,
-                'revision': 0,
-                'flags': 0,
-                'size': 168530,
-                'Unsynchronized': False,
-                'Compressed': False,
-                'Experimental': False,
-                'Footer': False,
-                'read_ext_header': None})
+
+        value = b'ID3\x03\x00\x00\x00\n$R'
+        with mock.patch('__main__.open', mock_open(read_data=value)) as m:
+            reader = Reader_test()
+            mp3header = ID3Tags.Header()
+            mp3header.read(reader)
+            self.assertDictEqual(
+                mp3header.__dict__,
+                {
+                    'major_version': 3,
+                    'revision': 0,
+                    'flags': 0,
+                    'size': 168530,
+                    'Unsynchronized': False,
+                    'Compressed': False,
+                    'Experimental': False,
+                    'Footer': False,
+                    'read_ext_header': None})
 
     def test_tag_process_(self):
         frame = ID3Tags.TagFrame()
@@ -45,9 +60,8 @@ class TestCat(unittest.TestCase):
         self.assertEqual(ID3Tags.Reader.get_synchsafe_int("\x00\n$R"), 168530)
 
     def test_tags_output(self):
-        from unittest.mock import patch, mock_open
-        with patch("builtins.open", mock_open(read_data="data")) as mock_file:
-            test_reader = ID3Tags.Reader("filename.txt")
+        with mock.patch("builtins.open", mock_open(read_data=b'ID3\x03\x00\x00\x00\n$R')):
+            test_reader = ID3Tags.Reader("lolki.txt", True)
             test_reader.mp3frame = ID3Tags.Mp3Frame()
             test_reader.mp3frame.__dict__ = {
                 'MPEG_version': 3,
@@ -79,7 +93,7 @@ class TestCat(unittest.TestCase):
                 test_reader.tags(
                     None, None), ("\n"
                                   "-----Header info----\n"
-                                  "ID3 tag version: 3.0\n"
+                                  "ID3 tag version: 2.3.0\n"
                                   "ID3 tag size: 4086 byte\n"
                                   "Comressed: No\n"
                                   "\n"
@@ -92,6 +106,7 @@ class TestCat(unittest.TestCase):
                                   "Frame count: 0\n"
                                   "\n"
                                   "------Tags info-----\n"))
+
 
 if __name__ == '__main__':
     unittest.main()

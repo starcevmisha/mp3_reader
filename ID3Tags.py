@@ -62,7 +62,8 @@ class Header:
         raw_header = reader.file.read(10)
         if len(raw_header) < 10:
             print('Bad file')
-            exit()
+
+
 
 
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
@@ -75,23 +76,23 @@ class Header:
 
         self.read_ext_header = None
 
-        self.process_flag()
+        self.process_flag(reader)
         if self.read_ext_header:
             self.read_ext_header()
 
     def pass_pass(self):
         pass
 
-    def process_flag(self):
+    def process_flag(self,reader):
         self.Unsynchronized = self.flags & 128 != 0
         if self.major_version == 2:
             self.Compressed = self.flags & 64 != 0
         if self.major_version >= 3:
             if self.flags & 64:
                 if self.major_version == 3:
-                    self.read_ext_header = self.reader.read_ext_header_ver3
+                    self.read_ext_header = reader.read_ext_header_ver3
                 if self.major_version == 4:
-                    self.read_ext_header = self.reader.read_ext_header_ver4
+                    self.read_ext_header = reader.read_ext_header_ver4
             self.Experimental = self.flags & 32 != 0
         if self.major_version == 4:
             self.Footer = self.flags & 16 != 0
@@ -204,6 +205,7 @@ class Mp3Frame:
         reader.file.seek(reader.header.size + 10)
         raw_header = reader.file.read(4)
 
+
         while not (raw_header[0] & 0xFF ==
                    0xFF and raw_header[1] >> 5 & 0x7 == 0x7):
             reader.file.seek(-1, 1)
@@ -247,6 +249,7 @@ class Mp3Frame:
                 (os.path.getsize(reader.file_name) - reader.header.size) / \
                 (bitrate[self.bitrate_index] * 1000) * 8
 
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -265,7 +268,7 @@ class Mp3Frame:
 
 class Reader:
 
-    def __init__(self, file):
+    def __init__(self, file, test=False):
         self.Frames = {}
         self.file = file
 
@@ -274,8 +277,8 @@ class Reader:
         self.frames = {}
         self.allFrames = []
         self.file = open(self.file, 'rb')
-        self.read_tags()
-
+        if not test:
+            self.read_tags()
         self.file.close()
 
     def read_tags(self):
