@@ -3,10 +3,15 @@ import unittest
 from unittest import mock
 from mock import mock_open
 
+
 class HeaderTest:
+
     def __init__(self):
         self.size = -10
+
+
 class Reader_test:
+
     def __init__(self):
         self.file = open('111123.txt', 'rb')
         self.remaining_byte = 0
@@ -21,7 +26,7 @@ class TestCat(unittest.TestCase):
         with mock.patch('__main__.open', mock_open(read_data=value)) as m:
             reader = Reader_test()
             mp3header = ID3Tags.Header()
-            mp3header.read(reader)
+            mp3header.read(open("123.txt", 'rb'))
             self.assertDictEqual(
                 mp3header.__dict__,
                 {
@@ -29,11 +34,13 @@ class TestCat(unittest.TestCase):
                     'revision': 0,
                     'flags': 0,
                     'size': 168530,
+                    'return_size': 168530,
                     'Unsynchronized': False,
                     'Compressed': False,
                     'Experimental': False,
                     'Footer': False,
-                    'read_ext_header': None})
+                    'read_ext_header': None
+                })
 
     def test_tag_process_(self):
         frame = ID3Tags.TagFrame()

@@ -26,4 +26,3 @@ if args.player:
 
 else:
     print(tags.tags(picname, txtname, is_hex))
-

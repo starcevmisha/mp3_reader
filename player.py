@@ -67,7 +67,7 @@ def play_music(music_file, volume=0.8):
 # pick a MP3 music file you have in the working folder
 # otherwise give the full file path
 # (try other sound file formats too)
-if __name__=="__main__":
+if __name__ == "__main__":
     music_file = "song.mp3"
     # optional volume 0 to 1.0
     volume = 0.8

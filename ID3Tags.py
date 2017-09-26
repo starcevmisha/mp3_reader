@@ -58,13 +58,10 @@ class Header:
     def __str__(self):
         return str(self.__dict__)
 
-    def read(self, reader):
-        raw_header = reader.file.read(10)
+    def read(self, file):
+        raw_header = file.read(10)
         if len(raw_header) < 10:
             print('Bad file')
-
-
-
 
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
         self.major_version = raw_header[1]
@@ -72,30 +69,42 @@ class Header:
         self.flags = raw_header[3]
         self.size = Reader.get_synchsafe_int(raw_header[4:8])
 
-        reader.remaining_byte = self.size
+        self.return_size = self.size
 
         self.read_ext_header = None
 
-        self.process_flag(reader)
+        self.process_flag()
         if self.read_ext_header:
-            self.read_ext_header()
+            self.read_ext_header(file)
 
     def pass_pass(self):
         pass
 
-    def process_flag(self,reader):
+    def process_flag(self):
         self.Unsynchronized = self.flags & 128 != 0
         if self.major_version == 2:
             self.Compressed = self.flags & 64 != 0
         if self.major_version >= 3:
             if self.flags & 64:
                 if self.major_version == 3:
-                    self.read_ext_header = reader.read_ext_header_ver3
+                    self.read_ext_header = self.read_ext_header_ver3
                 if self.major_version == 4:
-                    self.read_ext_header = reader.read_ext_header_ver4
+                    self.read_ext_header = self.read_ext_header_ver4
             self.Experimental = self.flags & 32 != 0
         if self.major_version == 4:
             self.Footer = self.flags & 16 != 0
+
+    def read_ext_header_ver3(self, file):
+        size = Reader.get_int(file.read(4))
+        self.return_size -= 4
+        data = file.read(size)
+        self.return_size -= size
+
+    def read_ext_header_ver4(self, file):
+        size = Reader.get_synchsafe_int(file.read(4))
+        self.return_size -= 4
+        data = file.read(size - 4)
+        self.return_size -= (size - 4)
 
     def __iter__(self):
         yield "ID3 tag version: 2.{}.{}"\
@@ -205,7 +214,6 @@ class Mp3Frame:
         reader.file.seek(reader.header.size + 10)
         raw_header = reader.file.read(4)
 
-
         while not (raw_header[0] & 0xFF ==
                    0xFF and raw_header[1] >> 5 & 0x7 == 0x7):
             reader.file.seek(-1, 1)
@@ -249,7 +257,6 @@ class Mp3Frame:
                 (os.path.getsize(reader.file_name) - reader.header.size) / \
                 (bitrate[self.bitrate_index] * 1000) * 8
 
-
     def __str__(self):
         return str(self.__dict__)
 
@@ -284,9 +291,9 @@ class Reader:
     def read_tags(self):
 
         self.header = Header()
-        self.header.read(self)
+        self.header.read(self.file)
 
-        #self.remaining_byte = self.header.size
+        self.remaining_byte = self.header.return_size
 
         read_frame_versions = {2: self.read_frame_rev2,
                                3: self.read_frame_rev3,
@@ -309,14 +316,6 @@ class Reader:
 
         self.mp3frame = Mp3Frame()
         self.mp3frame.read(self)
-
-    def read_ext_header_ver3(self):
-        size = Reader.get_int(self.read_bytes(4))
-        data = self.read_bytes(size)
-
-    def read_ext_header_ver4(self):
-        size = Reader.get_synchsafe_int(self.read_bytes(4))
-        data = self.read_bytes(size - 4)
 
     validIdChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
