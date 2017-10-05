@@ -37,7 +37,7 @@ channel_mode = {
 }
 
 
-class Id3Error(BaseException):
+class Id3Error(Exception):
     pass
 
 
@@ -54,14 +54,14 @@ class Header:
         self.Compressed = False
         self.Experimental = False
         self.Footer = False
-
-    def __str__(self):
-        return str(self.__dict__)
+    #
+    # def __str__(self):
+    #     return str(self.__dict__)
 
     def read(self, file):
         raw_header = file.read(10)
         if len(raw_header) < 10:
-            print('Bad file')
+            raise Id3Error("Incorrect file")
 
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
         self.major_version = raw_header[1]
@@ -106,11 +106,12 @@ class Header:
         data = file.read(size - 4)
         self.return_size -= (size - 4)
 
-    def __iter__(self):
-        yield "ID3 tag version: 2.{}.{}"\
-            .format(self.major_version, self.revision)
-        yield "ID3 tag size: {} byte".format(self.size)
-        yield "Comressed: {}".format("Yes" if self.Compressed else "No")
+    def __str__(self):
+        return "ID3 tag version: 2.{}.{}\n"\
+            .format(self.major_version, self.revision) +\
+               "ID3 tag size: {} byte\n".format(self.size) + \
+               'Comressed: {}\n'\
+            .format("Yes" if self.Compressed else "No")
 
 
 class TagFrame:
@@ -257,20 +258,20 @@ class Mp3Frame:
                 (os.path.getsize(reader.file_name) - reader.header.size) / \
                 (bitrate[self.bitrate_index] * 1000) * 8
 
-    def __str__(self):
-        return str(self.__dict__)
+    # def __str__(self):
+    #     return str(self.__dict__)
 
-    def __iter__(self):
+    def __str__(self):
         # self.MPEG_version)
-        yield "MPEG Version: {}".format("MPEG-1 Layer III")
-        # yield "Layer index: {}".format(self.layer_index)
-        yield "Bitrate: {} kb/s".format(bitrate[self.bitrate_index])
-        yield "Sampling rate {} kh/s"\
-            .format(sampling_rate[self.sampling_rate_index])
-        yield "Channel mode: {}".format(channel_mode[self.channel_mode])
-        yield "Time: %d.%02d mm.ss" %\
-              (int(self.time // 60), int(self.time % 60))
-        yield "Frame count: {}".format(self.frame_count)
+        return "MPEG Version: MPEG-1 Layer III\n" +\
+               "Bitrate: {} kb/s\n".format(bitrate[self.bitrate_index]) +\
+               "Sampling rate {} kh/s\n"\
+                   .format(sampling_rate[self.sampling_rate_index]) +\
+               "Channel mode: {}\n"\
+                   .format(channel_mode[self.channel_mode]) +\
+               "Time: %d.%02d mm.ss\n" \
+               % (int(self.time // 60), int(self.time % 60)) +\
+               "Frame count: {}\n".format(self.frame_count)
 
 
 class Reader:
@@ -283,10 +284,9 @@ class Reader:
         self.header = None
         self.frames = {}
         self.allFrames = []
-        self.file = open(self.file, 'rb')
-        if not test:
-            self.read_tags()
-        self.file.close()
+        with (open(self.file, 'rb')) as self.file:
+            if not test:
+                self.read_tags()
 
     def read_tags(self):
 
@@ -334,12 +334,12 @@ class Reader:
     def read_frame_rev2(self):
         if self.remaining_byte < 6:
             return None
-        id = self.read_bytes(3).decode()
-        if len(id) < 3 or not Reader.valid_id(id):
+        version_id = self.read_bytes(3).decode()
+        if len(version_id) < 3 or not Reader.valid_id(version_id):
             return None
         bytes = struct.unpack('!BBB', self.read_bytes(3))
         frame = TagFrame()
-        frame.id = id
+        frame.id = version_id
         frame.size = Reader.get_int(bytes)
         frame.raw = self.read_bytes(frame.size)
         return frame
@@ -347,12 +347,12 @@ class Reader:
     def read_frame_rev3(self):
         if self.remaining_byte < 10:
             return None
-        id = self.read_bytes(4).decode()
-        if len(id) < 4 or not Reader.valid_id(id):
+        version_id = self.read_bytes(4).decode()
+        if len(version_id) < 4 or not Reader.valid_id(version_id):
             return None
         bytes = struct.unpack('!BBBBh', self.read_bytes(6))
         frame = TagFrame()
-        frame.id = id
+        frame.id = version_id
         frame.size = Reader.get_int(bytes[:4])
         real_size = frame.size
         frame.flag = bytes[4]
@@ -381,12 +381,12 @@ class Reader:
     def read_frame_rev4(self):
         if self.remaining_byte < 10:
             return None
-        id = self.read_bytes(4).decode()
-        if len(id) < 4 or not Reader.valid_id(id):
+        version_id = self.read_bytes(4).decode()
+        if len(version_id) < 4 or not Reader.valid_id(version_id):
             return None
         bytes = struct.unpack('!BBBBh', self.read_bytes(6))
         frame = TagFrame()
-        frame.id = id
+        frame.id = version_id
         frame.size = Reader.get_int(bytes[:4])
         real_size = frame.size
         frame.flag = bytes[4]
@@ -433,36 +433,36 @@ class Reader:
         return i
 
     def tags(self, picname, txtname, is_hex=False):
-        tag_str = ''
+        tag_str = []
 
-        tag_str += "\n-----Header info----\n"
-        for i in self.header:
-            tag_str += i + "\n"
+        tag_str.append("\n-----Header info----\n")
 
-        tag_str += "\n-----MP3frame info----\n"
-        for i in self.mp3frame:
-            tag_str += i + "\n"
+        tag_str.append(str(self.header))
 
-        tag_str += "\n------Tags info-----\n"
+        tag_str.append("\n-----MP3frame info----\n")
+
+        tag_str.append(str(self.mp3frame))
+
+        tag_str.append("\n------Tags info-----\n")
         for i in self.Frames:
             if isinstance(self.Frames[i].value, bytes) and is_hex:
-                tag_str += "{}: \n{}\n".format(
+                tag_str.append("{}: \n{}\n".format(
                     self.Frames[i].id,
-                    hexdump.hexdump(self.Frames[i].value, 'return'))
+                    hexdump.hexdump(self.Frames[i].value, 'return')))
             else:
                 if (self.Frames[i].id == "APIC"):
-                    tag_str += "{}: {}\n".format(
+                    tag_str.append("{}: {}\n".format(
                         self.Frames[i].id,
-                        "Picture. Use --pic to store it or --hex to view")
+                        "Picture. Use --pic to store it or --hex to view"))
                 elif(self.Frames[i].id == "USLT"):
-                    tag_str += "{}: {}\n".format(
+                    tag_str.append("{}: {}\n".format(
                         self.Frames[i].id,
-                        "Text. Use --txt to store it")
+                        "Text. Use --txt to store it"))
                 else:
-                    tag_str += "{}: {}\n".format(
+                    tag_str.append("{}: {}\n".format(
                         self.Frames[i].id,
                         self.Frames[i].
-                        value[:min(len(self.Frames[i].value), 30)])
+                        value[:min(len(self.Frames[i].value), 30)]))
 
         basename = self.file_name.split('.')[0]
 
@@ -472,7 +472,7 @@ class Reader:
         if "USLT" in self.Frames and txtname:
             with open(txtname, "w") as h:
                 h.write(self.Frames['USLT'].value)
-        return tag_str
+        return ''.join(tag_str)
 
     def __iter__(self):
         for i in self.Frames:

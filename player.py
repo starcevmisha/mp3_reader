@@ -1,11 +1,43 @@
-""" pg_playmp3f.py
-play MP3 music files using Python module pygame
-pygame is free from: http://www.pygame.org
-(does not create a GUI frame in this case)
-"""
 import pygame as pg
-import msvcrt
 import time
+
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+
 
 
 def play_music(music_file, volume=0.8):
@@ -30,17 +62,20 @@ def play_music(music_file, volume=0.8):
         return
 
     print("Press q to quit\n"
-          "Press Space to play/pause")
+          "Press Space to play/pause\n"
+          "Press -> to forward")
     pg.mixer.music.play()
     start_time = time.time() + 2
     flag = 1
+    getch = _Getch()
+
     while True:
-        pressed_key = msvcrt.getch()
-        if pressed_key == b'q':
+        pressed_key = getch()
+        if pressed_key == b'q'or pressed_key == 'q':
             pg.mixer.music.play()
             exit()
         else:
-            if pressed_key == b' ':
+            if pressed_key == b' ' or pressed_key == ' ':
                 if flag:
                     pg.mixer.music.pause()
                     flag = 0
@@ -51,22 +86,23 @@ def play_music(music_file, volume=0.8):
                 print(time.time() - start_time)
 
             if pressed_key == b'\xe0':
-                second_key = msvcrt.getch()
+                second_key = getch()
                 if second_key == b'M':
-                    start_time -= 1
+                    start_time -= 10
                     pg.mixer.music.play(start=time.time() - start_time)
                 if second_key == b'K':
                     start_time += 1
                     pg.mixer.music.play(start=time.time() - start_time)
+            if pressed_key == '\x1b':
+                second_key = getch()+getch()
+                if second_key == '[C':
+                    start_time += 1
+                    pg.mixer.music.play(start=time.time() - start_time)
+                if second_key == '[D':
+                    start_time -= 10
+                    pg.mixer.music.play(start=time.time() - start_time)
 
-    # # while pg.mixer.music.get_busy():
-    # #     pass
-    #     # check if playback has finished
-    #     # clock.tick(30)
 
-# pick a MP3 music file you have in the working folder
-# otherwise give the full file path
-# (try other sound file formats too)
 if __name__ == "__main__":
     music_file = "song.mp3"
     # optional volume 0 to 1.0
