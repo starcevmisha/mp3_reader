@@ -283,9 +283,13 @@ class Reader:
         self.header = None
         self.frames = {}
         self.allFrames = []
-        with (open(file, 'rb')) as self.file:
-            if not is_test_case:
-                self.read_tags()
+        try:
+            with (open(file, 'rb')) as self.file:
+                if not is_test_case:
+                    self.read_tags()
+        except FileNotFoundError as e:
+            print(e)
+            exit()
 
     def read_tags(self):
 
