@@ -148,7 +148,7 @@ class TagFrame:
             else:
                 # if _c: _coverage('bad encoding')
                 value = self.raw[1:]
-            # Don't let trailing zero bytes fool you.
+            # Don't let trailing zero header_header_ fool you.
             if value:
                 value = value.strip('\0')
             # The value can actually be a list.
@@ -266,9 +266,9 @@ class Mp3Frame:
         return "MPEG Version: MPEG-1 Layer III\n" +\
                "Bitrate: {} kb/s\n".format(bitrate[self.bitrate_index]) +\
                "Sampling rate {} kh/s\n"\
-                   .format(sampling_rate[self.sampling_rate_index]) +\
+            .format(sampling_rate[self.sampling_rate_index]) +\
                "Channel mode: {}\n"\
-                   .format(channel_mode[self.channel_mode]) +\
+            .format(channel_mode[self.channel_mode]) +\
                "Time: %d.%02d mm.ss\n" \
                % (int(self.time // 60), int(self.time % 60)) +\
                "Frame count: {}\n".format(self.frame_count)
@@ -276,16 +276,15 @@ class Mp3Frame:
 
 class Reader:
 
-    def __init__(self, file, test=False):
+    def __init__(self, file, is_test_case=False):
         self.Frames = {}
-        self.file = file
 
         self.file_name = file
         self.header = None
         self.frames = {}
         self.allFrames = []
-        with (open(self.file, 'rb')) as self.file:
-            if not test:
+        with (open(file, 'rb')) as self.file:
+            if not is_test_case:
                 self.read_tags()
 
     def read_tags(self):
@@ -320,8 +319,8 @@ class Reader:
     validIdChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
     @staticmethod
-    def valid_id(id):
-        for c in id:
+    def valid_id(id_string):
+        for c in id_string:
             if c not in Reader.validIdChars:
                 return False
         return True
@@ -337,10 +336,10 @@ class Reader:
         version_id = self.read_bytes(3).decode()
         if len(version_id) < 3 or not Reader.valid_id(version_id):
             return None
-        bytes = struct.unpack('!BBB', self.read_bytes(3))
+        header_header_bytes = struct.unpack('!BBB', self.read_bytes(3))
         frame = TagFrame()
         frame.id = version_id
-        frame.size = Reader.get_int(bytes)
+        frame.size = Reader.get_int(header_header_bytes)
         frame.raw = self.read_bytes(frame.size)
         return frame
 
@@ -350,12 +349,12 @@ class Reader:
         version_id = self.read_bytes(4).decode()
         if len(version_id) < 4 or not Reader.valid_id(version_id):
             return None
-        bytes = struct.unpack('!BBBBh', self.read_bytes(6))
+        header_bytes = struct.unpack('!BBBBh', self.read_bytes(6))
         frame = TagFrame()
         frame.id = version_id
-        frame.size = Reader.get_int(bytes[:4])
+        frame.size = Reader.get_int(header_bytes[:4])
         real_size = frame.size
-        frame.flag = bytes[4]
+        frame.flag = header_bytes[4]
 
         frame.TagAlterPreserve = frame.flag & 32768 != 0
         frame.FileAlterPreserve = frame.flag & 16384 != 0
@@ -384,12 +383,12 @@ class Reader:
         version_id = self.read_bytes(4).decode()
         if len(version_id) < 4 or not Reader.valid_id(version_id):
             return None
-        bytes = struct.unpack('!BBBBh', self.read_bytes(6))
+        header_bytes = struct.unpack('!BBBBh', self.read_bytes(6))
         frame = TagFrame()
         frame.id = version_id
-        frame.size = Reader.get_int(bytes[:4])
+        frame.size = Reader.get_int(header_bytes[:4])
         real_size = frame.size
-        frame.flag = bytes[4]
+        frame.flag = header_bytes[4]
 
         frame.TagAlterPreserve = frame.flag & 16384 != 0
         frame.FileAlterPreserve = frame.flag & 8192 != 0
@@ -416,19 +415,21 @@ class Reader:
         frame.raw = self.read_bytes(real_size)
         return frame
 
-    def get_int(bytes):
+    @staticmethod
+    def get_int(bytes_string):
         i = 0
-        if isinstance(bytes, str):
-            bytes = [ord(c) for c in bytes]
-        for b in bytes:
+        if isinstance(bytes_string, str):
+            bytes_string = [ord(c) for c in bytes_string]
+        for b in bytes_string:
             i = i * 256 + b
         return i
 
-    def get_synchsafe_int(bytes):
+    @staticmethod
+    def get_synchsafe_int(bytes_string):
         i = 0
-        if isinstance(bytes, str):
-            bytes = [ord(c) for c in bytes]
-        for b in bytes:
+        if isinstance(bytes_string, str):
+            bytes_string = [ord(c) for c in bytes_string]
+        for b in bytes_string:
             i = i * 128 + b
         return i
 

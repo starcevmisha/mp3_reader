@@ -67,7 +67,8 @@ class TestCat(unittest.TestCase):
         self.assertEqual(ID3Tags.Reader.get_synchsafe_int("\x00\n$R"), 168530)
 
     def test_tags_output(self):
-        with mock.patch("builtins.open", mock_open(read_data=b'ID3\x03\x00\x00\x00\n$R')):
+        with mock.patch("builtins.open", mock_open(
+                read_data=b'ID3\x03\x00\x00\x00\n$R')):
             test_reader = ID3Tags.Reader("lolki.txt", True)
             test_reader.mp3frame = ID3Tags.Mp3Frame()
             test_reader.mp3frame.__dict__ = {

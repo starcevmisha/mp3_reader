@@ -1,9 +1,11 @@
 import pygame as pg
 import time
 
+
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the
 screen."""
+
     def __init__(self):
         try:
             self.impl = _GetchWindows()
@@ -14,11 +16,15 @@ screen."""
 
 
 class _GetchUnix:
+
     def __init__(self):
-        import tty, sys
+        import tty
+        import sys
 
     def __call__(self):
-        import sys, tty, termios
+        import sys
+        import tty
+        import termios
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -30,14 +36,13 @@ class _GetchUnix:
 
 
 class _GetchWindows:
+
     def __init__(self):
         import msvcrt
 
     def __call__(self):
         import msvcrt
         return msvcrt.getch()
-
-
 
 
 def play_music(music_file, volume=0.8):
@@ -94,7 +99,7 @@ def play_music(music_file, volume=0.8):
                     start_time += 1
                     pg.mixer.music.play(start=time.time() - start_time)
             if pressed_key == '\x1b':
-                second_key = getch()+getch()
+                second_key = getch() + getch()
                 if second_key == '[C':
                     start_time += 1
                     pg.mixer.music.play(start=time.time() - start_time)

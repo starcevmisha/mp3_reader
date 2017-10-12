@@ -2,7 +2,7 @@ import argparse
 import ID3Tags
 import player
 
-if __name__=="__main__":
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('name', type=str, help='file name')
     parser.add_argument('--pic', help='filename to store picture')
@@ -11,7 +11,6 @@ if __name__=="__main__":
                         help='hexdump of binary tags')
 
     parser.add_argument('--player', help='Play sound', action="store_true")
-
 
     args = parser.parse_args()
 
