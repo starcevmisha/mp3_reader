@@ -396,7 +396,7 @@ class Reader:
         header_bytes = struct.unpack('!BBBBh', self.read_bytes(6))
         frame = TagFrame()
         frame.id = version_id
-        frame.size = Reader.get_int(header_bytes[:4])
+        frame.size = Reader.get_synchsafe_int(header_bytes[:4])
         real_size = frame.size
         frame.flag = header_bytes[4]
 
@@ -483,9 +483,9 @@ class Reader:
                 with open(picname, 'wb') as h:
                     h.write(self.Frames['APIC'].value)
             if "USLT" in self.Frames and txtname:
-                with open(txtname, "w") as h:
-                    h.write(self.Frames['USLT'].value)
-
+                with open(txtname, "wb") as h:
+                    text = self.Frames['USLT'].value
+                    h.write(text.encode('utf-8'))
 
         return ''.join(tag_str)
 
