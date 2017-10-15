@@ -36,6 +36,7 @@ class TestCat(unittest.TestCase):
                     'size': 168530,
                     'return_size': 168530,
                     'Unsynchronized': False,
+                    'is_empty_header': False,
                     'Compressed': False,
                     'Experimental': False,
                     'Footer': False,
@@ -96,7 +97,8 @@ class TestCat(unittest.TestCase):
                 'Compressed': False,
                 'Experimental': False,
                 'Footer': False,
-                'read_ext_header': None}
+                'read_ext_header': None,
+                'is_empty_header': False}
             self.assertEqual(
                 test_reader.tags(
                     None, None), ("\n"
@@ -112,8 +114,7 @@ class TestCat(unittest.TestCase):
                                   "Channel mode: Join Stereo\n"
                                   "Time: 3.20 mm.ss\n"
                                   "Frame count: 0\n"
-                                  "\n"
-                                  "------Tags info-----\n"))
+                                  ))
 
 
 if __name__ == '__main__':

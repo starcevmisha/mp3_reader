@@ -50,6 +50,7 @@ class Header:
         self.revision = 0
         self.flags = 0
         self.size = 0
+        self.size = 0
         self.Unsynchronized = False
         self.Compressed = False
         self.Experimental = False
@@ -64,6 +65,12 @@ class Header:
             raise Id3Error("Incorrect file")
 
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
+        if raw_header[0] != b"ID3":
+            self.return_size = 0
+            self.is_empty_header = True
+            return
+
+        self.is_empty_header = False
         self.major_version = raw_header[1]
         self.revision = raw_header[2]
         self.flags = raw_header[3]
@@ -305,17 +312,16 @@ class Reader:
         if self.header.major_version in read_frame_versions:
 
             self.read_frame = read_frame_versions[self.header.major_version]
-        else:
-            raise Id3Error("Unsupported major version: {}"
-                           .format(self.header.major_version))
 
-        while self.remaining_byte > 0:
-            frame = self.read_frame()
-            if frame:
-                frame.process()
-                self.Frames[frame.id] = frame
-            else:
-                break
+            while self.remaining_byte > 0:
+                frame = self.read_frame()
+                if frame:
+                    frame.process()
+                    self.Frames[frame.id] = frame
+                else:
+                    break
+        else:
+            pass
 
         self.mp3frame = Mp3Frame()
         self.mp3frame.read(self)
@@ -440,43 +446,47 @@ class Reader:
     def tags(self, picname, txtname, is_hex=False):
         tag_str = []
 
-        tag_str.append("\n-----Header info----\n")
+        if not self.header.is_empty_header:
+            tag_str.append("\n-----Header info----\n")
 
-        tag_str.append(str(self.header))
+            tag_str.append(str(self.header))
 
         tag_str.append("\n-----MP3frame info----\n")
 
         tag_str.append(str(self.mp3frame))
 
-        tag_str.append("\n------Tags info-----\n")
-        for i in self.Frames:
-            if isinstance(self.Frames[i].value, bytes) and is_hex:
-                tag_str.append("{}: \n{}\n".format(
-                    self.Frames[i].id,
-                    hexdump.hexdump(self.Frames[i].value, 'return')))
-            else:
-                if (self.Frames[i].id == "APIC"):
-                    tag_str.append("{}: {}\n".format(
+        if len(self.Frames) > 0:
+            tag_str.append("\n------Tags info-----\n")
+            for i in self.Frames:
+                if isinstance(self.Frames[i].value, bytes) and is_hex:
+                    tag_str.append("{}: \n{}\n".format(
                         self.Frames[i].id,
-                        "Picture. Use --pic to store it or --hex to view"))
-                elif(self.Frames[i].id == "USLT"):
-                    tag_str.append("{}: {}\n".format(
-                        self.Frames[i].id,
-                        "Text. Use --txt to store it"))
+                        hexdump.hexdump(self.Frames[i].value, 'return')))
                 else:
-                    tag_str.append("{}: {}\n".format(
-                        self.Frames[i].id,
-                        self.Frames[i].
-                        value[:min(len(self.Frames[i].value), 30)]))
+                    if (self.Frames[i].id == "APIC"):
+                        tag_str.append("{}: {}\n".format(
+                            self.Frames[i].id,
+                            "Picture. Use --pic to store it or --hex to view"))
+                    elif(self.Frames[i].id == "USLT"):
+                        tag_str.append("{}: {}\n".format(
+                            self.Frames[i].id,
+                            "Text. Use --txt to store it"))
+                    else:
+                        tag_str.append("{}: {}\n".format(
+                            self.Frames[i].id,
+                            self.Frames[i].
+                            value[:min(len(self.Frames[i].value), 30)]))
 
-        basename = self.file_name.split('.')[0]
+            basename = self.file_name.split('.')[0]
 
-        if "APIC" in self.Frames and picname:
-            with open(picname, 'wb') as h:
-                h.write(self.Frames['APIC'].value)
-        if "USLT" in self.Frames and txtname:
-            with open(txtname, "w") as h:
-                h.write(self.Frames['USLT'].value)
+            if "APIC" in self.Frames and picname:
+                with open(picname, 'wb') as h:
+                    h.write(self.Frames['APIC'].value)
+            if "USLT" in self.Frames and txtname:
+                with open(txtname, "w") as h:
+                    h.write(self.Frames['USLT'].value)
+
+
         return ''.join(tag_str)
 
     def __iter__(self):
