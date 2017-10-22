@@ -131,18 +131,18 @@ class TagFrame:
         self.flags = 0
         self.raw = ''
         self.value = ''
-        self.TagAlterPreserve = False
-        self.FileAlterPreserve = False
-        self.ReadOnly = False
-        self.Compressed = False
-        self.Encrypted = False
-        self.InGroup = False
+        self.tagAlterPreserve = False
+        self.f = False
+        self.r = False
+        self.compressed = False
+        self.encrypted = False
+        self.inGroup = False
 
     def __str__(self):
         return str(self.__dict__)
 
     def process(self):
-        if self.Compressed:
+        if self.compressed:
             self.raw = zlib.decompress(self.raw)
 
         # Скопировал, не моё
@@ -295,8 +295,7 @@ class Reader:
                 if not is_test_case:
                     self.read_tags()
         except FileNotFoundError as e:
-            print(e)
-            exit()
+            raise e
 
     def read_tags(self):
 
@@ -366,21 +365,21 @@ class Reader:
         real_size = frame.size
         frame.flag = header_bytes[4]
 
-        frame.TagAlterPreserve = frame.flag & 32768 != 0
-        frame.FileAlterPreserve = frame.flag & 16384 != 0
-        frame.ReadOnly = frame.flag & 8192 != 0
+        frame.tagAlterPreserve = frame.flag & 32768 != 0
+        frame.f = frame.flag & 16384 != 0
+        frame.r = frame.flag & 8192 != 0
 
-        frame.Compressed = frame.flag & 128 != 0
-        frame.Encrypted = frame.flag & 64 != 0
-        frame.InGroup = frame.flag & 32 != 0
+        frame.compressed = frame.flag & 128 != 0
+        frame.encrypted = frame.flag & 64 != 0
+        frame.inGroup = frame.flag & 32 != 0
 
-        if frame.Compressed:
+        if frame.compressed:
             frame.decompressed_size = Reader.get_int(self.read_bytes(4))
             real_size -= 4
-        if frame.Encrypted:
+        if frame.encrypted:
             frame.encryption_method = self.read_bytes(1)
             real_size -= 1
-        if frame.InGroup:
+        if frame.inGroup:
             frame.group = self.read_bytes(1)
             real_size -= 1
 
@@ -400,19 +399,19 @@ class Reader:
         real_size = frame.size
         frame.flag = header_bytes[4]
 
-        frame.TagAlterPreserve = frame.flag & 16384 != 0
-        frame.FileAlterPreserve = frame.flag & 8192 != 0
-        frame.ReadOnly = frame.flag & 4096 != 0
+        frame.tagAlterPreserve = frame.flag & 16384 != 0
+        frame.f = frame.flag & 8192 != 0
+        frame.r = frame.flag & 4096 != 0
 
-        frame.InGroup = frame.flag & 64 != 0
-        if frame.InGroup:
+        frame.inGroup = frame.flag & 64 != 0
+        if frame.inGroup:
             frame.group = self.read_bytes(1)
             real_size -= 1
 
-        frame.Compressed = frame.flag & 8 != 0
+        frame.compressed = frame.flag & 8 != 0
 
-        frame.Encrypted = frame.flag & 4 != 0
-        if frame.Encrypted:
+        frame.encrypted = frame.flag & 4 != 0
+        if frame.encrypted:
             frame.encryption_method = self.read_bytes(1)
             real_size -= 1
 
@@ -455,7 +454,7 @@ class Reader:
 
         tag_str.append(str(self.mp3frame))
 
-        if len(self.Frames) > 0:
+        if self.Frames:
             tag_str.append("\n------Tags info-----\n")
             for i in self.Frames:
                 if isinstance(self.Frames[i].value, bytes) and is_hex:

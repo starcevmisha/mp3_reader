@@ -16,14 +16,9 @@ screen."""
 
 
 class _GetchUnix:
-
-    def __init__(self):
-        import tty
-        import sys
-
     def __call__(self):
-        import sys
         import tty
+        import sys
         import termios
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
@@ -36,10 +31,6 @@ class _GetchUnix:
 
 
 class _GetchWindows:
-
-    def __init__(self):
-        import msvcrt
-
     def __call__(self):
         import msvcrt
         return msvcrt.getch()
