@@ -51,12 +51,12 @@ class TestCat(unittest.TestCase):
             'flags': 0,
             'raw': b'\x01\xff\xfeN\x00i\x00r\x00v\x00a\x00n\x00a\x00',
             'value': '',
-            'TagAlterPreserve': False,
-            'FileAlterPreserve': False,
-            'ReadOnly': False,
-            'Compressed': False,
-            'Encrypted': False,
-            'InGroup': False,
+            'tagAlterPreserve': False,
+            'fileAlterPreserve': False,
+            'readOnly': False,
+            'compressed': False,
+            'encrypted': False,
+            'inGroup': False,
             'flag': 0}
         frame.process()
         self.assertEqual(frame.value, "Nirvana")
