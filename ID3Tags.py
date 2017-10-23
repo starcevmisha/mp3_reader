@@ -67,7 +67,7 @@ class Header:
         raw_header = struct.unpack('!3sBBBBBBB', raw_header)
         if raw_header[0] != b"ID3":
             self.return_size = 0
-            file.seek(-10,1)
+            file.seek(-10, 1)
             a = file.read(10)
             self.is_empty_header = True
             return
@@ -226,7 +226,6 @@ class Mp3Frame:
         else:
             reader.file.seek(0)
         raw_header = reader.file.read(4)
-
 
         while not (raw_header[0] & 0xFF ==
                    0xFF and raw_header[1] >> 5 & 0x7 == 0x7):

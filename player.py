@@ -2,11 +2,13 @@ import pygame as pg
 import time
 import sys
 
+
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the
 screen."""
 
     class _GetchUnix:
+
         def __call__(self):
             import tty
             import termios
@@ -20,6 +22,7 @@ screen."""
             return ch
 
     class _GetchWindows:
+
         def __call__(self):
             import msvcrt
             return msvcrt.getch()
@@ -31,11 +34,6 @@ screen."""
             self.impl = self._GetchUnix()
 
     def __call__(self): return self.impl()
-
-
-
-
-
 
 
 def play_music(music_file, volume=0.8):
