@@ -270,7 +270,7 @@ class Mp3Frame:
             self.time = \
                 (os.path.getsize(reader.file_name) - reader.header.size) / \
                 (bitrate[self.bitrate_index] * 1000) * 8
-            # self.frame_count = reader.file.readall()
+            self.frame_count = reader.file.read().count(b'\xff\xfb')
 
     # def __str__(self):
     #     return str(self.__dict__)
@@ -297,12 +297,9 @@ class Reader:
         self.header = None
         self.frames = {}
         self.allFrames = []
-        try:
-            with (open(file, 'rb')) as self.file:
-                if not is_test_case:
-                    self.read_tags()
-        except FileNotFoundError as e:
-            raise e
+        with (open(file, 'rb')) as self.file:
+            if not is_test_case:
+                self.read_tags()
 
     def read_tags(self):
 
