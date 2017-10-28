@@ -8,7 +8,9 @@ class _Getch:
 screen."""
 
     class _GetchUnix:
-
+        def __init__(self):
+            import tty
+            import termios
         def __call__(self):
             import tty
             import termios
@@ -22,6 +24,8 @@ screen."""
             return ch
 
     class _GetchWindows:
+        def __init__(self):
+            import msvcrt
 
         def __call__(self):
             import msvcrt
@@ -29,9 +33,9 @@ screen."""
 
     def __init__(self):
         try:
-            self.impl = self._GetchWindows()
-        except ImportError:
             self.impl = self._GetchUnix()
+        except ImportError:
+            self.impl = self._GetchWindows()
 
     def __call__(self): return self.impl()
 
